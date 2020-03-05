@@ -1,0 +1,30 @@
+{
+    "seed": 2020,
+    "save_path": "models_best",
+    "data": {
+        "lang": "bn",
+        "train_set": "flacs_bengali_train.tsv",
+        "dev_set": "flacs_bengali_dev.tsv"
+    },
+    "optimizer": {
+        "batch_size" : 8,
+        "epochs" : 20,
+        "learning_rate" : 1e-3,
+        "momentum" : 0.0
+    },
+    "model": {
+        "class" : "CTC",
+        "dropout" : 0.4,
+        "encoder" : {
+            "conv" : [
+                [32, 5, 32, 2],
+                [32, 5, 32, 1]
+            ],
+            "rnn" : {
+                "dim" : 256,
+                "bidirectional" : true,
+                "layers" : 5
+            }
+        }
+    }
+}
