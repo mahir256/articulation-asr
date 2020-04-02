@@ -43,8 +43,8 @@ class ProgressiveNetwork(nn.Module):
             connections.append(rnn)
             connections.append(nn.Linear(rnn_cfg["dim"],rnn_cfg["dim"]))
         self.connections = connections
-        self.encoder_dim = rnn_cfg["dim"]
-        self.fc = LinearND(self.encoder_dim, output_dim+1)
+        self._encoder_dim = rnn_cfg["dim"]
+        self.fc = LinearND(self._encoder_dim, output_dim+1)
 
     def forward(self, batch):
         x, y, x_lens, y_lens = self.collate(*batch)
@@ -64,3 +64,20 @@ class ProgressiveNetwork(nn.Module):
             cur_layer = F.relu(hidden_layer_sum+F.dropout(x,p=self.dropout))
         cur_layer = self.fc(cur_layer)
         return cur_layer
+
+    @property
+    def is_cuda(self):
+        return list(self.parameters())[0].is_cuda
+
+    @property
+    def encoder_dim(self):
+        return self._encoder_dim
+
+    # These are just simple settings.
+    def set_eval(self):
+        self.eval()
+        self.volatile = True
+
+    def set_train(self):
+        self.train()
+        self.volatile = False

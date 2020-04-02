@@ -12,8 +12,8 @@ import torch.utils.data as datautils
 
 from scipy.signal import spectrogram
 
-from mappings import *
-from preprocessor import file_log_spectrogram
+from utils.mappings import *
+from utils.preprocessor import file_log_spectrogram
 
 class AudioDataset(datautils.Dataset):
     def __init__(self, lang_in, tsv_filename, preprocessor_in, batch_size):
@@ -37,7 +37,9 @@ class AudioDataset(datautils.Dataset):
 
     def __getitem__(self, index):
         utterance = self.data[index]
-        return self.preprocessor.preprocess(utterance['sound'],utterance['text'])
+        soundfile = os.path.join(corpora_path,speech_langs[self.lang],
+                                    'data',utterance['sound'][:2],utterance['sound']+'.flac')
+        return self.preprocessor.preprocess(soundfile,utterance['text'])
 
 def read_tsv(file):
     utterances = []

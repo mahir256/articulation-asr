@@ -22,7 +22,7 @@ class BasicNetwork(nn.Module):
             conv = nn.Conv2d(in_channels, out_channels, (height, width),
                 stride=(stride, stride), padding=0)
             conv_layers.extend([conv, nn.ReLU()])
-            if(config["dropout"] != 0):
+            if(self.dropout != 0):
                 conv_layers.append(nn.Dropout(p=self.dropout))
             in_channels = out_channels
         self.conv = nn.Sequential(*conv_layers)
@@ -31,16 +31,18 @@ class BasicNetwork(nn.Module):
 
         rnn_cfg = encoder_cfg["rnn"]
         rnns = nn.ModuleList()
+        self.rnn_bidirectional = rnn_cfg["bidirectional"]
+        num_directions = 2 if self.rnn_bidirectional else 1
         for i in range(rnn_cfg["layers"]):
-            rnns.append(nn.GRU(input_size=(conv_out if i==0 else rnn_cfg["dim"]),
+            rnns.append(nn.GRU(input_size=(conv_out if i==0 else rnn_cfg["dim"]*num_directions),
                             hidden_size=rnn_cfg["dim"],
                             batch_first=True,
-                            bidirectional=rnn_cfg["bidirectional"]))
+                            bidirectional=self.rnn_bidirectional))
         self.rnns = rnns
-        self.encoder_dim = rnn_cfg["dim"]
+        self._encoder_dim = rnn_cfg["dim"]
         self.volatile = False
         self.blank = output_dim
-        self.fc = LinearND(self.encoder_dim, output_dim+1)
+        self.fc = LinearND(self._encoder_dim, output_dim+1)
 
     def conv_out_size(self, n, dim):
         for c in self.conv.children():
@@ -53,14 +55,17 @@ class BasicNetwork(nn.Module):
     def encode(self, x):
         x = x.unsqueeze(1)
         x = self.conv(x)
+
         x = torch.transpose(x, 1, 2).contiguous()
         batch, time, freq, channels = x.size()
         x = x.view((batch, time, freq*channels))
-        for layer in self.rnns[:-1]:
+
+        for layernum, layer in enumerate(self.rnns):
+            if(layernum != 0):
+                if(self.dropout != 0):
+                    x = F.dropout(x,p=self.dropout)
             x, h = layer(x)
-            x = F.dropout(x,p=self.dropout)
-        x, h = self.rnns[-1](x)
-        if self.rnn.bidirectional:
+        if self.rnn_bidirectional:
             half = x.size()[-1] // 2
             x = x[:, :, :half] + x[:, :, half:]
         return x
@@ -108,6 +113,22 @@ class BasicNetwork(nn.Module):
                 seq.append(p)
             prev = p
         return seq
+    # These are just simple settings.
+    def set_eval(self):
+        self.eval()
+        self.volatile = True
+
+    def set_train(self):
+        self.train()
+        self.volatile = False
+
+    @property
+    def is_cuda(self):
+        return list(self.parameters())[0].is_cuda
+
+    @property
+    def encoder_dim(self):
+        return self._encoder_dim
 
 NEG_INF = -float("inf")
 

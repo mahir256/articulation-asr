@@ -1,5 +1,5 @@
 {
-    "seed": 2020,
+    "seed": 2021,
     "save_path": "models_best",
     "data": {
         "lang": "bn",
@@ -7,9 +7,9 @@
         "dev_set": "flacs_bengali_dev.tsv"
     },
     "optimizer": {
-        "batch_size" : 8,
-        "epochs" : 20,
-        "learning_rate" : 1e-3,
+        "batch_size" : 20,
+        "epochs" : 40,
+        "learning_rate" : 1e-4,
         "momentum" : 0.0
     },
     "model": {

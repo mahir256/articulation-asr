@@ -32,8 +32,8 @@ def graves_const(m):
                 if 'weight' in name or 'bias' in name:
                     nn.init.uniform_(param,-0.1,0.1);
         elif(type(m) == nn.Conv2d):
-            nn.init.uniform_(m.weight,-0.1,0.1);
-            nn.init.uniform_(m.bias,-0.1,0.1);
+            nn.init.uniform_(m.weight,0,0.1);
+            nn.init.uniform_(m.bias,0,0.1);
 #            else:
 #                print("Didn't work for", type(m))
     except AttributeError:
@@ -41,7 +41,7 @@ def graves_const(m):
         pass
 
 
-clipping = 5
+clipping = 0.5
 
 def run_epoch(model, optimizer, train_ldr, it, avg_loss):
     model_t = 0.0
@@ -56,6 +56,7 @@ def run_epoch(model, optimizer, train_ldr, it, avg_loss):
         loss = model.loss(inputs, labels)
         loss.backward(torch.ones_like(loss))
         grad_norm = nn.utils.clip_grad_norm_(model.parameters(), clipping)
+
         loss = loss.data[0]
         optimizer.step()
         prev_end_t = end_t

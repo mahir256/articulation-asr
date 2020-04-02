@@ -10,9 +10,8 @@ import torch, torchaudio
 import torchaudio.functional as F
 import torch.autograd as autograd
 import torch.utils.data as datautils
-from mappings import *
-
-from scipy.signal import spectrogram
+import unicodedata
+from utils.mappings import *
 
 class Preprocessor():
     def __init__(self, lang_in, tsv_filename, max_samples=100, min_audio_length=5):
@@ -22,26 +21,30 @@ class Preprocessor():
         self.phonology = self.get_phonology(self.lang)
         self.lexicon = self.get_lexicon(self.lang)
         data = read_tsv(transcript_path)
-        soundfiles = [os.path.join(corpora_path,speech_langs[self.lang],'data',x['sound'][:2],x['sound']+'.flac')
-                        for x in data]
-        random.shuffle(soundfiles)
+        random.shuffle(data)
         sample_list = []
         sample_num = 0
         while(sample_num < max_samples):
             sample = data[sample_num]
             if(sample['length'] >= min_audio_length):
-                sample_list.append(sample['sound'])
+                sample_list.append(sample)
                 if(len(sample_list) >= max_samples):
                     break
             sample_num += 1
-        self.mean, self.std = mean_stddev(soundfiles[:max_samples])
+        soundfiles = []
+        for x in sample_list:
+            soundfiles.append(os.path.join(corpora_path,speech_langs[self.lang],
+                                    'data',x['sound'][:2],x['sound']+'.flac'))
+        self.mean, self.std = mean_stddev(soundfiles)
         self._input_dim = self.mean.shape[0]
         self.int_to_char = {}
         self.int_to_char[" "] = dict(enumerate(self.phonology.keys()))
+        self.int_to_char[" "][len(self.int_to_char[" "])] = " "
         for feature_class in feature_class_values.keys():
             self.int_to_char[feature_class] = dict(enumerate(feature_class_values[feature_class]))
             default_representation = "C" if feature_classes_consonant[feature_class] else "V"
             self.int_to_char[feature_class][len(self.int_to_char[feature_class])] = default_representation
+            self.int_to_char[feature_class][len(self.int_to_char[feature_class])] = " "
         self.char_to_int = {}
         for feature_class in self.int_to_char.keys():
             self.char_to_int[feature_class] = {v: k for k, v in self.int_to_char[feature_class].items()}
@@ -94,14 +97,14 @@ class Preprocessor():
                 lexicon[word] = filter(lambda a : a != ".", phones)
         return lexicon
 
-    def encode(self, text, feature_class=None):
+    def encode(self, text, feature_class=" "):
         words = text.split(' ')
         encoded = []
         for word in words:
             # TODO: handle out-of-vocabulary words
-            cur_word = self.lexicon[word]
-            if(feature_class is None):
-                encoded.extend(cur_word.split(' '))
+            cur_word = self.lexicon[unicodedata.normalize('NFC',word)]
+            if(feature_class == " "):
+                encoded.extend(cur_word)
             else:
                 for phone in cur_word:
                     if (feature_class in self.phonology[phone].keys()):
@@ -111,14 +114,15 @@ class Preprocessor():
             encoded.append(' ')
         return [self.char_to_int[feature_class][t] for t in encoded]
     
-    def decode(self, sequence, feature_class=None):
-        if(feature_class is None):
+    def decode(self, sequence, feature_class=" "):
+        if(feature_class == " "):
             return [self.int_to_char[" "][s] for s in sequence]
         return [self.int_to_char[feature_class][s] for s in sequence]
 
     def preprocess(self, sound, text):
-        cur_input = file_log_spectrogram(sound)
-        return ((cur_input - self.mean) / self.std), self.encode(text)
+        cur_input = torch.squeeze(file_log_spectrogram(sound))
+        preprocessed_sound = ((cur_input - self.mean) / self.std)
+        return preprocessed_sound, self.encode(text)
 
     @property
     def input_dim(self):
@@ -126,7 +130,7 @@ class Preprocessor():
 
     @property
     def phone_size(self):
-        return len(self.int_to_char[0])
+        return len(self.int_to_char[" "])
 
 def read_tsv(file):
     utterances = []
@@ -140,7 +144,7 @@ def read_tsv(file):
     return utterances
 
 def mean_stddev(sounds):
-    samples = [file_log_spectrogram(soundfile)[:,:,:150] for soundfile in sounds]
+    samples = [file_log_spectrogram(soundfile) for soundfile in sounds]
     samples = torch.cat(samples)
     mean = torch.mean(samples, axis=0)
     std = torch.std(samples, axis=0)
@@ -155,5 +159,5 @@ def file_log_spectrogram(sound):
                                     nperseg,
                                     nperseg-noverlap,
                                     nperseg,
-                                    2,0))
-    return cur_input
+                                    2,0) + 1e-10)
+    return torch.squeeze(torch.transpose(cur_input,1,2))

@@ -10,8 +10,6 @@ import torchaudio
 import torch.autograd as autograd
 import torch.utils.data as datautils
 
-from scipy.signal import spectrogram
-
 class RandomBatchSampler(datautils.sampler.Sampler):
     def __init__(self, src, batch_size):
         it_end = len(src) - batch_size + 1
