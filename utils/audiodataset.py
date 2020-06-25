@@ -14,6 +14,7 @@ from scipy.signal import spectrogram
 
 from utils.mappings import *
 from utils.preprocessor import file_log_spectrogram
+from utils.text_io import read_tsv
 
 class AudioDataset(datautils.Dataset):
     def __init__(self, lang_in, tsv_filename, preprocessor_in, batch_size):
@@ -40,15 +41,4 @@ class AudioDataset(datautils.Dataset):
         soundfile = os.path.join(corpora_path,speech_langs[self.lang],
                                     'data',utterance['sound'][:2],utterance['sound']+'.flac')
         return self.preprocessor.preprocess(soundfile,utterance['text'])
-
-def read_tsv(file):
-    utterances = []
-    with codecs.open(os.path.join('corpora-googleasr',file),'r','utf-8') as f:
-        for line in f.read().splitlines():
-            [soundfile, speaker, text, length] = line.split('\t')
-            utterances.append({'sound': soundfile,
-                               'speaker': speaker,
-                               'text': text,
-                               'length': float(length)})
-    return utterances
 

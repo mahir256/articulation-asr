@@ -1,91 +1,820 @@
-language_resources_path = '/home/mahir256/language-resources'
-corpora_path = '/home/mahir256/corpora-googleasr'
+language_resources_path = "/home/mahir256/language-resources"
+corpora_path = "/work"
 
-speech_langs = {'bn': 'asr_bengali',
-                'jv': 'asr_javanese',
-                'ne': 'asr_nepali',
-                'si': 'asr_sinhala',
-                'su': 'asr_sundanese'}
+speech_langs = {"bn": "asr_bengali",
+                "jv": "asr_javanese",
+                "ne": "asr_nepali",
+                "si": "asr_sinhala",
+                "su": "asr_sundanese"}
 
-lexicon_langs = {'bn':'data/lexicon.tsv',
-                 'jv':'data/lexicon.tsv',
-                 'ne':'data/lexicon.tsv',
-                 'si':'data/lexicon.tsv',
-                 'su':'data/lexicon.tsv'}
+lexicon_langs = {"bn":"data/lexicon.tsv",
+                 "jv":"data/lexicon.tsv",
+                 "ne":"data/lexicon.tsv",
+                 "si":"data/lexicon.tsv",
+                 "su":"data/lexicon.tsv"}
 
-phonology_langs = {'bn':'festvox/phonology.json',
-                   'jv':'festvox/phonology.json',
-                   'ne':'festvox/phonology.json',
-                   'si':'festvox/ipa_phonology.json',
-                   'su':'festvox/phonology.json'}
-
-feature_classes = ["manner", "place", "voice", "height", "length", "frontness", "round"]
+feature_classes = ["place", "manner", "voicing", "aspiration", "prenasal",
+                   "height", "length", "position", "roundness", "nasal"]
 feature_classes_consonant = {
-    "manner": True,
     "place": True,
-    "voice": True,
+    "manner": True,
+    "voicing": True,
+    "aspiration": True,
+    "prenasal": True,
     "height": False,
     "length": False,
-    "frontness": False,
-    "round": False
+    "position": False,
+    "roundness": False,
+    "nasal": False
 }
 feature_class_values = {
-    "manner": ["s", "a", "n", "x", "f"],
-    "place": ["v", "p", "a", "d", "l", "g", "j"],
-    "voice": ["f", "t"],
-    "height": ["0", "1", "2", "3", "4"],
-    "length": ["s"],
-    "frontness": ["f", "c", "b"],
-    "round": ["f", "t"]
+    "place": ["b", "l", "d", "a", "c", "p", "v", "g"], # "bilabial", "labiodental", "dental", "alveolar", "postalveolar", "palatal", "velar", "glottal"
+    "manner": ["s", "a", "f", "n", "r", "l"], # "stop", "affricate", "fricative", "nasal", "approximant", "lateral"
+    "voicing": ["0", "1"], # false, true
+    "aspiration": ["0", "1"], # false, true
+    "prenasal": ["0", "1"], # false, true
+    "height": ["0", "1", "2", "3", "4", "5", "6"], # "close", "nearclose", "closemid", "mid", "openmid", "nearopen", "open"
+    "length": ["0", "1"], # "short", "long"
+    "position": ["f", "c", "b"], # "front", "central", "back"
+    "roundness": ["0", "1"], # false, true
+    "nasal": ["0", "1"] # false, true
 }
 
-feature_harmonize = {}
+char_to_int = {}
+int_to_char = {}
 
-feature_harmonize["bn"] = {
-    "ctype": {
-        "_equivalent": "manner",
-        "STOP": "s",
-        "AFFRICATE": "a",
-        "NASAL": "n",
-        "APPROXIMANT": "x",
-        "FRICATIVE": "f"
+for feature, value in feature_class_values.items():
+    feature_class_values[feature] = list(enumerate(value))
+    out_of_class = (len(feature_class_values[feature]),"V" if feature_classes_consonant[feature] else "C")
+    feature_class_values[feature].append(out_of_class)
+    feature_class_values[feature].append((len(feature_class_values[feature])," "))
+    int_to_char[feature] = {x[0]: x[1] for x in feature_class_values[feature]}
+    char_to_int[feature] = {x[1]: x[0] for x in feature_class_values[feature]}
+
+common_phone_set = {
+  "k": {
+    "_type": "C",
+    "place": "v",
+    "manner": "s",
+    "voicing": "0",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "kh": {
+    "_type": "C",
+    "place": "v",
+    "manner": "s",
+    "voicing": "0",
+    "aspiration": "1",
+    "prenasal": "0"
     },
-    "poa": {
-        "_equivalent": "place",
-        "VELAR": "v",
-        "POSTALVEOLAR": "p",
-        "ALVEOLAR": "a",
-        "DENTAL": "d",
-        "LABIAL": "l",
-        "GLOTTAL": "g",
-        "PALATAL": "j"
-    },
-    "voiced": {
-        "_equivalent": "voice",
-        "false": "f",
-        "true": "t"
-    },
-    "height": {
-        "_equivalent": "height",
-        "CLOSE": "0",
-        "CLOSEMID": "1",
-        "OPENMID": "2",
-        "NEAROPEN": "3",
-        "OPEN": "4"
-    },
-    "length": {
-        "_equivalent": "length",
-        "SHORT": "s"
-    },
-    "position": {
-        "_equivalent": "frontness",
-        "FRONT": "f",
-        "CENTRAL": "c",
-        "BACK": "b"
-    },
-    "rounded": {
-        "_equivalent": "round",
-        "false": "f",
-        "true": "t"
-    }
+  "g": {
+    "_type": "C",
+    "place": "v",
+    "manner": "s",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "ng": {
+    "_type": "C",
+    "place": "v",
+    "manner": "s",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "1"
+  },
+  "gh": {
+    "_type": "C",
+    "place": "v",
+    "manner": "s",
+    "voicing": "1",
+    "aspiration": "1",
+    "prenasal": "0"
+  },
+  "N": {
+    "_type": "C",
+    "place": "v",
+    "manner": "n",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "c": {
+    "_type": "C",
+    "manner": "a",
+    "place": "c",
+    "voicing": "0",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "ch": {
+    "_type": "C",
+    "manner": "a",
+    "place": "c",
+    "voicing": "0",
+    "aspiration": "1",
+    "prenasal": "0"
+  },
+  "j": {
+    "_type": "C",
+    "manner": "a",
+    "place": "c",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "jh": {
+    "_type": "C",
+    "manner": "a",
+    "place": "c",
+    "voicing": "1",
+    "aspiration": "1",
+    "prenasal": "0"
+  },
+  "ts": {
+    "_type": "C",
+    "manner": "a",
+    "place": "a",
+    "voicing": "0",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "tsh": {
+    "_type": "C",
+    "manner": "a",
+    "place": "a",
+    "voicing": "0",
+    "aspiration": "1",
+    "prenasal": "0"
+  },
+  "dz": {
+    "_type": "C",
+    "manner": "a",
+    "place": "a",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "dzh": {
+    "_type": "C",
+    "manner": "a",
+    "place": "a",
+    "voicing": "1",
+    "aspiration": "1",
+    "prenasal": "0"
+  },
+  "ny": {
+    "_type": "C",
+    "place": "p",
+    "manner": "n",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "T": {
+    "_type": "C",
+    "place": "a",
+    "manner": "s",
+    "voicing": "0",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "Th": {
+    "_type": "C",
+    "place": "a",
+    "manner": "s",
+    "voicing": "0",
+    "aspiration": "1",
+    "prenasal": "0"
+  },
+  "D": {
+    "_type": "C",
+    "place": "a",
+    "manner": "s",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "nD": {
+    "_type": "C",
+    "place": "a",
+    "manner": "s",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "1"
+  },
+  "Dh": {
+    "_type": "C",
+    "place": "a",
+    "manner": "s",
+    "voicing": "1",
+    "aspiration": "1",
+    "prenasal": "0"
+  },
+  "nn": {
+    "_type": "C",
+    "place": "a",
+    "manner": "n",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "t": {
+    "_type": "C",
+    "place": "d",
+    "manner": "s",
+    "voicing": "0",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "th": {
+    "_type": "C",
+    "place": "d",
+    "manner": "s",
+    "voicing": "0",
+    "aspiration": "1",
+    "prenasal": "0"
+  },
+  "d": {
+    "_type": "C",
+    "place": "d",
+    "manner": "s",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "nd": {
+    "_type": "C",
+    "place": "d",
+    "manner": "s",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "1"
+  },
+  "dh": {
+    "_type": "C",
+    "place": "d",
+    "manner": "s",
+    "voicing": "1",
+    "aspiration": "1",
+    "prenasal": "0"
+  },
+  "n": {
+    "_type": "C",
+    "place": "d",
+    "manner": "n",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "p": {
+    "_type": "C",
+    "place": "b",
+    "manner": "s",
+    "voicing": "0",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "ph": {
+    "_type": "C",
+    "place": "b",
+    "manner": "s",
+    "voicing": "0",
+    "aspiration": "1",
+    "prenasal": "0"
+  },
+  "b": {
+    "_type": "C",
+    "place": "b",
+    "manner": "s",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "mb": {
+    "_type": "C",
+    "place": "b",
+    "manner": "s",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "1"
+  },
+  "bh": {
+    "_type": "C",
+    "place": "b",
+    "manner": "s",
+    "voicing": "1",
+    "aspiration": "1",
+    "prenasal": "0"
+  },
+  "m": {
+    "_type": "C",
+    "place": "b",
+    "manner": "n",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "r": {
+    "_type": "C",
+    "place": "a",
+    "manner": "r",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "l": {
+    "_type": "C",
+    "place": "a",
+    "manner": "l",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "sh": {
+    "_type": "C",
+    "place": "c",
+    "manner": "f",
+    "voicing": "0",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "s": {
+    "_type": "C",
+    "place": "a",
+    "manner": "f",
+    "voicing": "0",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "z": {
+    "_type": "C",
+    "place": "a",
+    "manner": "f",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "h": {
+    "_type": "C",
+    "place": "g",
+    "manner": "f",
+    "voicing": "0",
+    "aspiration": "1",
+    "prenasal": "0"
+  },
+  "gl": {
+    "_type": "C",
+    "place": "g",
+    "manner": "s",
+    "voicing": "0",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "f": {
+    "_type": "C",
+    "place": "l",
+    "manner": "f",
+    "voicing": "0",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "x": {
+    "_type": "C",
+    "place": "v",
+    "manner": "f",
+    "voicing": "0",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "i": {
+    "_type": "V",
+    "height": "0",
+    "length": "0",
+    "position": "f",
+    "roundness": "0",
+    "nasal": "0"
+  },
+  "ii": {
+    "_type": "V",
+    "height": "0",
+    "length": "1",
+    "position": "f",
+    "roundness": "0",
+    "nasal": "0"
+  },
+  "in": {
+    "_type": "V",
+    "height": "0",
+    "length": "0",
+    "position": "f",
+    "roundness": "0",
+    "nasal": "1"
+  },
+  "u": {
+    "_type": "V",
+    "height": "0",
+    "length": "0",
+    "position": "b",
+    "roundness": "1",
+    "nasal": "0"
+  },
+  "uu": {
+    "_type": "V",
+    "height": "0",
+    "length": "1",
+    "position": "b",
+    "roundness": "1",
+    "nasal": "0"
+  },
+  "un": {
+    "_type": "V",
+    "height": "0",
+    "length": "0",
+    "position": "b",
+    "roundness": "1",
+    "nasal": "1"
+  },
+  "e": {
+    "_type": "V",
+    "height": "2",
+    "length": "0",
+    "position": "f",
+    "roundness": "0",
+    "nasal": "0"
+  },
+  "ee": {
+    "_type": "V",
+    "height": "2",
+    "length": "1",
+    "position": "f",
+    "roundness": "0",
+    "nasal": "0"
+  },
+  "en": {
+    "_type": "V",
+    "height": "2",
+    "length": "0",
+    "position": "f",
+    "roundness": "0",
+    "nasal": "1"
+  },
+  "eu": {
+    "_type": "V",
+    "height": "0",
+    "length": "0",
+    "position": "c",
+    "roundness": "0",
+    "nasal": "0"
+  },
+  "ex": {
+    "_type": "V",
+    "height": "3",
+    "length": "0",
+    "position": "c",
+    "roundness": "0",
+    "nasal": "0"
+  },
+  "exx": {
+    "_type": "V",
+    "height": "3",
+    "length": "1",
+    "position": "c",
+    "roundness": "0",
+    "nasal": "0"
+  },
+  "o": {
+    "_type": "V",
+    "height": "2",
+    "length": "0",
+    "position": "b",
+    "roundness": "1",
+    "nasal": "0"
+  },
+  "E": {
+    "_type": "V",
+    "height": "5",
+    "length": "0",
+    "position": "f",
+    "roundness": "0",
+    "nasal": "0"
+  },
+  "EE": {
+    "_type": "V",
+    "height": "5",
+    "length": "1",
+    "position": "f",
+    "roundness": "0",
+    "nasal": "0"
+  },
+  "O": {
+    "_type": "V",
+    "height": "4",
+    "length": "0",
+    "position": "b",
+    "roundness": "1",
+    "nasal": "0"
+  },
+  "ax": {
+    "_type": "V",
+    "height": "4",
+    "length": "0",
+    "position": "b",
+    "roundness": "0",
+    "nasal": "0"
+  },
+  "axn": {
+    "_type": "V",
+    "height": "4",
+    "length": "0",
+    "position": "b",
+    "roundness": "0",
+    "nasal": "1"
+  },
+  "a": {
+    "_type": "V",
+    "height": "6",
+    "length": "0",
+    "position": "c",
+    "roundness": "0",
+    "nasal": "0"
+  },
+  "aa": {
+    "_type": "V",
+    "height": "6",
+    "length": "1",
+    "position": "c",
+    "roundness": "0",
+    "nasal": "0"
+  },
+  "an": {
+    "_type": "V",
+    "height": "6",
+    "length": "0",
+    "position": "c",
+    "roundness": "0",
+    "nasal": "1"
+  },
+  "i^": {
+    "_type": "C",
+    "place": "p",
+    "manner": "r",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "u^": {
+    "_type": "C",
+    "place": "b",
+    "manner": "r",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "e^": {
+    "_type": "C",
+    "place": "p",
+    "manner": "r",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "o^": {
+    "_type": "C",
+    "place": "b",
+    "manner": "r",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "0"
+  }
+}
+
+feature_class_values["phones"] = list(enumerate(common_phone_set.keys()))
+feature_class_values["phones"].append((len(feature_class_values["phones"])," "))
+int_to_char["phones"] = {x[0]: x[1] for x in feature_class_values["phones"]}
+char_to_int["phones"] = {x[1]: x[0] for x in feature_class_values["phones"]}
+
+festvox_to_phones = {}
+
+festvox_to_phones["bn"] = {
+    "k": ["k"],
+    "kh": ["kh"],
+    "g": ["g"],
+    "gh": ["gh"],
+    "c": ["c"],
+    "ch": ["ch"],
+    "j": ["j"],
+    "jh": ["jh"],
+    "T": ["T"],
+    "Th": ["Th"],
+    "D": ["D"],
+    "Dh": ["Dh"],
+    "t": ["t"],
+    "th": ["th"],
+    "d": ["d"],
+    "dh": ["dh"],
+    "p": ["p"],
+    "b": ["b"],
+    "bh": ["bh"],
+    "N": ["N"],
+    "n": ["n"],
+    "m": ["m"],
+    "r": ["r"],
+    "l": ["l"],
+    "sh": ["sh"],
+    "s": ["s"],
+    "h": ["h"],
+    "f": ["f"],
+    "i": ["i"],
+    "u": ["u"],
+    "e": ["e"],
+    "o": ["o"],
+    "E": ["E"],
+    "O": ["O"],
+    "a": ["a"],
+    "i^": ["i^"],
+    "u^": ["u^"],
+    "e^": ["e^"],
+    "o^": ["o^"],
+    " ": [" "]
+}
+
+festvox_to_phones["jv"] = {
+    "k": ["k"],
+    "g": ["g"],
+    "ng": ["N"],
+    "c": ["c"],
+    "j": ["j"],
+    "ny": ["ny"],
+    "th": ["T"],
+    "dh": ["D"],
+    "t": ["t"],
+    "d": ["d"],
+    "n": ["n"],
+    "p": ["p"],
+    "b": ["b"],
+    "m": ["m"],
+    "y": ["i^"],
+    "r": ["r"],
+    "l": ["l"],
+    "w": ["u^"],
+    "sh": ["sh"],
+    "s": ["s"],
+    "z": ["z"],
+    "hx": ["x"],
+    "h": ["h"],
+    "f": ["f"],
+    "gl": ["gl"],
+    "i": ["i"],
+    "e": ["e"],
+    "ex": ["ex"],
+    "a": ["a"],
+    "u": ["u"],
+    "o": ["o"],
+    "ox": ["O"],
+    "ai": ["a", "i^"],
+    "au": ["a", "u^"],
+    "oi": ["o", "i^"],
+    " ": [" "]
+}
+
+festvox_to_phones["ne"] = {
+    "i": ["i"],
+    "u": ["u"],
+    "e": ["e"],
+    "o": ["o"],
+    "ax": ["ax"],
+    "aa": ["a"],
+    "in": ["in"],
+    "en": ["en"],
+    "un": ["un"],
+    "axn": ["axn"],
+    "aan": ["an"],
+    "ew": ["e", "u^"],
+    "oj": ["o", "i^"],
+    "ow": ["o", "u^"],
+    "axj": ["ax", "i^"],
+    "axw": ["ax", "u^"],
+    "aaj": ["aa", "i^"],
+    "aaw": ["aa", "u^"],
+    "ewn": ["e", "un"],
+    "ojn": ["o", "in"],
+    "own": ["o", "un"],
+    "axjn": ["ax", "in"],
+    "axwn": ["ax", "un"],
+    "aajn": ["a", "in"],
+    "aawn": ["a", "un"],
+    "k": ["k"],
+    "kh": ["kh"],
+    "g": ["g"],
+    "gh": ["gh"],
+    "ng": ["N"],
+    "ts": ["ts"],
+    "tsh": ["tsh"],
+    "jh": ["dz"],
+    "jhh": ["dzh"],
+    "tt": ["T"],
+    "tth": ["Th"],
+    "dd": ["D"],
+    "ddh": ["Dh"],
+    "nn": ["nn"],
+    "t": ["t"],
+    "th": ["th"],
+    "d": ["d"],
+    "dh": ["dh"],
+    "n": ["n"],
+    "p": ["p"],
+    "ph": ["ph"],
+    "b": ["b"],
+    "bh": ["bh"],
+    "m": ["m"],
+    "y": ["i^"],
+    "r": ["r"],
+    "l": ["l"],
+    "w": ["u^"],
+    "s": ["s"],
+    "h": ["h"],
+    " ": [" "]
+}
+
+festvox_to_phones["si"] = {
+    "k": ["k"],
+    "g": ["g"],
+    "ŋ": ["N"],
+    "c": ["c"],
+    "ɟ": ["j"],
+    "ɲ": ["ny"],
+    "ʈ": ["T"],
+    "ɖ": ["D"],
+    "t": ["t"],
+    "d": ["d"],
+    "n": ["n"],
+    "p": ["p"],
+    "b": ["b"],
+    "m": ["m"],
+    "ᵐb": ["mb"],
+    "ⁿd": ["nd"],
+    "ⁿɖ": ["nD"],
+    "ᵑg": ["ng"],
+    "y": ["i^"],
+    "r": ["r"],
+    "l": ["l"],
+    "w": ["u^"],
+    "s": ["s"],
+    "ʃ": ["sh"],
+    "h": ["h"],
+    "f": ["f"],
+    "a": ["a"],
+    "aː": ["aa"],
+    "æ": ["E"],
+    "æː": ["EE"],
+    "i": ["i"],
+    "iː": ["ii"],
+    "u": ["u"],
+    "uː": ["uu"],
+    "e": ["e"],
+    "eː": ["ee"],
+    "o": ["o"],
+    "oː": ["oː"],
+    "ə": ["ex"],
+    "əː": ["exx"],
+    " ": [" "]
+}
+
+festvox_to_phones["su"] = {
+    "k": ["k"],
+    "g": ["g"],
+    "ng": ["N"],
+    "c": ["c"],
+    "j": ["j"],
+    "ny": ["ny"],
+    "t": ["t"],
+    "d": ["d"],
+    "n": ["n"],
+    "p": ["p"],
+    "b": ["b"],
+    "m": ["m"],
+    "y": ["i^"],
+    "r": ["r"],
+    "l": ["l"],
+    "w": ["u^"],
+    "sy": ["sh"],
+    "s": ["s"],
+    "h": ["h"],
+    "hx": ["x"],
+    "f": ["f"],
+    "gl": ["gl"],
+    "z": ["z"],
+    "a": ["a"],
+    "ex": ["ex"],
+    "e": ["e"],
+    "eu": ["eu"],
+    "i": ["i"],
+    "u": ["u"],
+    "o": ["o"],
+    "ai": ["a", "i^"],
+    "au": ["a", "u^"],
+    "oi": ["o", "i^"],
+    " ": [" "]
 }
