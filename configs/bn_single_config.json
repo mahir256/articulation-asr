@@ -3,17 +3,20 @@
     "save_path": "bn_models",
     "data": {
         "lang": "bn",
-        "train_set": "inv_lines_bn_sorted_catted_train.tsv",
-        "dev_set": "inv_lines_bn_sorted_catted_dev.tsv",
-        "feature_classes": ["place","manner","height","position"]
+        "train_set": "bn_invlines_train_sorted.tsv",
+        "dev_set": "bn_invlines_dev.tsv",
+        "feature_classes": ["place","manner","height","position"],
+        "joint_fc_out": []
     },
     "optimizer": {
-	"class": "SGD",
-        "batch_size": 16,
-        "epochs": 40,
-        "learning_rate": 2e-4,
-        "momentum": 0.9,
-        "clipping": 12.5
+        "class": "SGD",
+        "batch_size" : 16,
+        "epochs" : 40,
+        "schedule": {
+            "learning_rate" : 5e-4,
+            "momentum" : 0,
+            "clipping": 0.5
+        }
     },
     "model": {
         "class" : "BasicNetwork",

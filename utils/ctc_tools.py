@@ -6,8 +6,7 @@ from collections import defaultdict
 NEG_INF = -float("inf")
 
 def logsumexp(*args):
-    """
-    Stable log sum exp.
+    r"""Stable log sum exp.
     """
     if all(a == NEG_INF for a in args):
         return NEG_INF
@@ -17,7 +16,8 @@ def logsumexp(*args):
     return a_max + lsp
 
 def zero_pad_concat(inputs):
-    r"""
+    r"""Concatenates all inputs along a new dimension and zero-pads all to match
+    the length of the longest input in the process.
     """
     max_t = max(inp.shape[0] for inp in inputs)
     shape = (len(inputs), max_t, inputs[0].shape[1])
@@ -27,14 +27,13 @@ def zero_pad_concat(inputs):
     return input_mat
 
 def make_new_beam():
-    r"""
+    r"""Returns an empty beam.
     """
     fn = lambda : (NEG_INF, NEG_INF)
     return defaultdict(fn)
 
 def decode(probs, beam_size=10, blank=0):
-    """
-    Performs inference for the given output probabilities.
+    r"""Performs inference for the given output probabilities.
 
     Arguments:
       probs: The output probabilities (e.g. post-softmax) for each

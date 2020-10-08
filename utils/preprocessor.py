@@ -54,7 +54,7 @@ class Preprocessor():
                 line_tabsplit = line.split('\t')
                 word = line_tabsplit[0].lower()
                 phones = line_tabsplit[1].split(' ')
-                lexicon[word] = filter(lambda a : a != ".", phones)
+                lexicon[word] = list(filter(lambda a : a != ".", phones))
         return lexicon
 
     def encode(self, text, feature_classes=["phones"]):
@@ -92,7 +92,8 @@ class Preprocessor():
         return [int_to_char[feature_class][s] for s in sequence]
 
     def preprocess(self, sound, text):
-        r"""
+        r"""Normalizes the log spectogram of ``sound`` and encodes ``text`` using
+        the feature classes passed into the preprocessor.
         """
         cur_input = torch.squeeze(file_log_spectrogram(sound))
         preprocessed_sound = ((cur_input - self.mean) / self.std)

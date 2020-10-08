@@ -1,0 +1,7 @@
+dill
+editdistance
+scipy
+soundfile
+torch
+torchaudio
+tqdm

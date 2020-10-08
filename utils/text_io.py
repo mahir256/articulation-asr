@@ -3,7 +3,8 @@ import os
 from utils.mappings import *
 
 def read_tsv(input_file):
-    r"""Reads in a tab-separated-value file containing utterances, their speakers, and their lengths.
+    r"""Reads in a tab-separated-value file containing utterances, their speakers,
+    and the lengths of those utterances.
     """
     utterances = []
     with codecs.open(input_file,'r','utf-8') as f:

@@ -5,21 +5,24 @@
         "lang": "jv",
         "train_set": "inv_lines_jv_sorted_catted_train.tsv",
         "dev_set": "inv_lines_jv_sorted_catted_dev.tsv",
-	"basis_path": "bn_models",
-        "feature_classes": ["place","manner","height","position"]
+	    "basis_path": "bn_models",
+        "feature_classes": ["place","manner","height","position"],
+        "joint_fc_out": ["phones"]
     },
     "optimizer": {
-	"class": "SGD",
+	    "class": "SGD",
         "batch_size" : 16,
         "epochs" : 40,
-        "learning_rate" : 1e-4,
-        "momentum" : 0.0,
-        "clipping": 0.5
+        "schedule": {
+            "learning_rate" : 1e-4,
+            "momentum" : 0.0,
+            "clipping": 0.5
+        }
     },
     "model": {
         "class" : "ProgressiveNetwork",
-        "dropout" : 0.4,
         "encoder" : {
+            "dropout" : 0.4,
             "conv" : [
                 [32, 5, 32, 2],
                 [32, 5, 32, 1]

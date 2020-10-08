@@ -8,53 +8,66 @@ import torch.nn.functional as F
 from models.linearnd import LinearND
 from utils.ctc_tools import zero_pad_concat, decode
 
+def conv_out_size(convs, n, dim):
+    r"""Returns the size of the output of a sequence of convolutional layers.
+    """
+    for c in convs.children():
+        if type(c) == nn.Conv2d:
+            kernel_size = c.kernel_size[dim]
+            stride = c.stride[dim]
+            n = int(math.ceil((n-kernel_size+1)/stride))
+    return n
+
 class BasicNetwork(nn.Module):
 
-    def __init__(self, freq_dim, output_dim, config):
+    def __init__(self, freq_dim, output_features, config):
         super(BasicNetwork, self).__init__()
         self.dim = freq_dim
         encoder_cfg = config["encoder"]
         convolution_cfg = encoder_cfg["conv"]
+        recurrent_cfg = encoder_cfg["rnn"]
         self.dropout = config["dropout"]
 
-        conv_layers = []
+        self.conv, out_channels = self.build_convolution_layers(convolution_cfg, self.dropout)
+        conv_out = out_channels * conv_out_size(self.conv, self.dim, 1)
+        assert conv_out > 0, "Non-positive convolutional output frequency dimension"
+
+        # TODO: can I unpack fewer values?
+        self.rnns, self._encoder_dim, self.rnn_bidirectional = self.build_recurrent_layers(recurrent_cfg, conv_out)
+
+        self.blanks, self.fcs = self.build_fc_layers(output_features, self._encoder_dim)
+
+    def build_convolution_layers(self, convolution_cfg, dropout):
+        conv_layers = nn.ModuleList()
         in_channels = 1
         for out_channels, height, width, stride in convolution_cfg:
             conv = nn.Conv2d(in_channels, out_channels, (height, width),
                 stride=(stride, stride), padding=0)
             conv_layers.extend([conv, nn.ReLU()])
-            if(self.dropout != 0):
-                conv_layers.append(nn.Dropout(p=self.dropout))
+            if(dropout != 0):
+                conv_layers.append(nn.Dropout(p=dropout))
             in_channels = out_channels
-        self.conv = nn.Sequential(*conv_layers)
-        conv_out = out_channels * self.conv_out_size(self.dim, 1)
-        assert conv_out > 0, "Non-positive convolutional output frequency dimension."
-
-        rnn_cfg = encoder_cfg["rnn"]
-        rnns = nn.ModuleList()
-        self.rnn_bidirectional = rnn_cfg["bidirectional"]
-        num_directions = 2 if self.rnn_bidirectional else 1
-        for i in range(rnn_cfg["layers"]):
-            rnns.append(nn.GRU(input_size=(conv_out if i==0 else rnn_cfg["dim"]*num_directions),
-                            hidden_size=rnn_cfg["dim"],
-                            batch_first=True,
-                            bidirectional=self.rnn_bidirectional))
-        self.rnns = rnns
-        self._encoder_dim = rnn_cfg["dim"]
-        self.volatile = False
-        self.blank = output_dim
-        self.fc = LinearND(self._encoder_dim, output_dim+1)
-
-    def conv_out_size(self, n, dim):
-        r"""
-        """
-        for c in self.conv.children():
-            if type(c) == nn.Conv2d:
-                kernel_size = c.kernel_size[dim]
-                stride = c.stride[dim]
-                n = int(math.ceil((n-kernel_size+1)/stride))
-        return n
+        return nn.Sequential(*conv_layers), out_channels
     
+    def build_recurrent_layers(self, recurrent_cfg, n):
+        rnns = nn.ModuleList()
+        rnn_bidirectional = recurrent_cfg["bidirectional"]
+        num_directions = 2 if rnn_bidirectional else 1
+        for i in range(recurrent_cfg["layers"]):
+            rnns.append(nn.GRU(input_size=(n if i==0 else recurrent_cfg["dim"]*num_directions),
+                            hidden_size=recurrent_cfg["dim"],
+                            batch_first=True,
+                            bidirectional=rnn_bidirectional))
+        return rnns, recurrent_cfg["dim"], rnn_bidirectional
+
+    def build_fc_layers(self, output_features, in_dim):
+        blanks = {}
+        fcs = nn.ModuleDict()
+        for output_feature, output_dim in output_features:
+            blanks[output_feature] = output_dim
+            fcs[output_feature] = LinearND(in_dim, output_dim+1)
+        return blanks, fcs
+
     def encode(self, x):
         r"""
         """
@@ -75,43 +88,55 @@ class BasicNetwork(nn.Module):
             x = x[:, :, :half] + x[:, :, half:]
         return x
     
-    def forward(self, batch):
+    def forward_batch(self, batch):
         r"""
         """
         x, y, x_lens, y_lens = self.collate(*batch)
-        return self.forward_impl(x)
+        return self.forward(x)
     
-    def forward_impl(self, x, softmax=False):
+    def forward(self, x, softmax=False):
         r"""
         """
         if self.is_cuda:
             x = x.cuda()
         x = self.encode(x)
-        x = self.fc(x)
-        if softmax:
-            return torch.nn.functional.softmax(x, dim=2)
-        return x
+        x_fcs = {}
+        for feature_class, fc in self.fcs.items():
+            current_fc_out = fc(x)
+            if softmax:
+                x_fcs[feature_class] = torch.nn.functional.softmax(current_fc_out, dim=2)
+            else:
+                x_fcs[feature_class] = current_fc_out
+        return x_fcs
 
     def infer(self, inputs, labels):
         r"""
         """
-        x, y, x_lens, y_lens = self.collate(inputs, labels)
-        probs = self.forward_impl(x, softmax=True)
-        probs = probs.data.cpu().numpy()
-        return [decode(p, beam_size=1, blank=self.blank)[0] for p in probs]
+        x, _, _, _ = self.collate(inputs, labels)
+        probs = self.forward(x, softmax=True)
+        for feature_class, prob in probs.items():
+            prob = prob.data.cpu().numpy()
+            # TODO: is there a way to speed this up for phones?
+            prob = [decode(p, beam_size=1, blank=self.blanks[feature_class])[0] for p in prob]
+            probs[feature_class] = prob
+        return probs
     
     def loss(self, inputs, labels):
         r"""
         """
         x, y, x_lens, y_lens = self.collate(inputs, labels)
-        out = self.forward_impl(x)
+        outs = self.forward(x)
+
         loss_function = torch.nn.CTCLoss(reduction='none')
-        return loss_function(torch.transpose(out,0,1), y, x_lens, y_lens)
+        losses = {}
+        for feature_class, out in outs.items():
+            losses[feature_class] = loss_function(torch.transpose(out,0,1), y, x_lens, y_lens)
+        return losses
     
     def collate(self, inputs, labels):
         r"""
         """
-        max_t = self.conv_out_size(max(i.shape[0] for i in inputs), 0)
+        max_t = conv_out_size(self.conv, max(i.shape[0] for i in inputs), 0)
         x_lens = torch.IntTensor([max_t] * len(inputs))
         y_lens = torch.IntTensor([len(l) for l in labels])
         x = torch.FloatTensor(zero_pad_concat(inputs))
@@ -135,13 +160,11 @@ class BasicNetwork(nn.Module):
         r"""
         """
         self.eval()
-        self.volatile = True
 
     def set_train(self):
         r"""
         """
         self.train()
-        self.volatile = False
 
     @property
     def is_cuda(self):
