@@ -5,6 +5,7 @@ import torch
 import torchaudio
 import torchaudio.functional as F
 import unicodedata
+import h5py
 from utils.mappings import *
 from utils.audio_io import mean_stddev, file_log_spectrogram
 from utils.text_io import read_tsv
@@ -34,8 +35,9 @@ class Preprocessor():
             sample_num += 1
         soundfiles = []
         for x in sample_list:
+            # TODO: move this filepath scheme someplace else!
             soundfiles.append(os.path.join(corpora_path,speech_langs[self.lang],
-                                    'data',x['sound'][:2],x['sound']+'.flac'))
+                                    'data',x['sound'][:3],x['sound']+'_1.wav'))
         self.mean, self.std = mean_stddev(soundfiles)
         self._input_dim = self.mean.shape[0]
     

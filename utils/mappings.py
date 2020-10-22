@@ -1,13 +1,16 @@
+# TODO: see if not loading all of these by default is possible
 language_resources_path = "/home/mahir256/language-resources"
-corpora_path = "/work"
+corpora_path = "/home/mahir256/corpora"
 
 speech_langs = {"bn": "asr_bengali",
+                "en": "asr_wsj",
                 "jv": "asr_javanese",
                 "ne": "asr_nepali",
                 "si": "asr_sinhala",
                 "su": "asr_sundanese"}
 
 lexicon_langs = {"bn":"data/lexicon.tsv",
+                 "en":"data/lexicon.tsv",
                  "jv":"data/lexicon.tsv",
                  "ne":"data/lexicon.tsv",
                  "si":"data/lexicon.tsv",
@@ -340,6 +343,14 @@ common_phone_set = {
     "aspiration": "0",
     "prenasal": "0"
   },
+  "zh": {
+    "_type": "C",
+    "place": "c",
+    "manner": "f",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
   "s": {
     "_type": "C",
     "place": "a",
@@ -351,6 +362,22 @@ common_phone_set = {
   "z": {
     "_type": "C",
     "place": "a",
+    "manner": "f",
+    "voicing": "1",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "tx": {
+    "_type": "C",
+    "place": "d",
+    "manner": "f",
+    "voicing": "0",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "dx": {
+    "_type": "C",
+    "place": "d",
     "manner": "f",
     "voicing": "1",
     "aspiration": "0",
@@ -377,6 +404,14 @@ common_phone_set = {
     "place": "l",
     "manner": "f",
     "voicing": "0",
+    "aspiration": "0",
+    "prenasal": "0"
+  },
+  "v": {
+    "_type": "C",
+    "place": "l",
+    "manner": "f",
+    "voicing": "1",
     "aspiration": "0",
     "prenasal": "0"
   },
@@ -412,6 +447,14 @@ common_phone_set = {
     "roundness": "0",
     "nasal": "1"
   },
+  "ix": {
+    "_type": "V",
+    "height": "1",
+    "length": "0",
+    "position": "f",
+    "roundness": "0",
+    "nasal": "0"
+  },
   "u": {
     "_type": "V",
     "height": "0",
@@ -435,6 +478,14 @@ common_phone_set = {
     "position": "b",
     "roundness": "1",
     "nasal": "1"
+  },
+  "ux": {
+    "_type": "V",
+    "height": "1",
+    "length": "0",
+    "position": "b",
+    "roundness": "1",
+    "nasal": "0"
   },
   "e": {
     "_type": "V",
@@ -484,6 +535,14 @@ common_phone_set = {
     "roundness": "0",
     "nasal": "0"
   },
+  "e3": {
+    "_type": "V",
+    "height": "4",
+    "length": "0",
+    "position": "f",
+    "roundness": "0",
+    "nasal": "0"
+  },
   "o": {
     "_type": "V",
     "height": "2",
@@ -514,6 +573,14 @@ common_phone_set = {
     "length": "0",
     "position": "b",
     "roundness": "1",
+    "nasal": "0"
+  },
+  "OX": {
+    "_type": "V",
+    "height": "6",
+    "length": "0",
+    "position": "b",
+    "roundness": "0",
     "nasal": "0"
   },
   "ax": {
@@ -818,3 +885,131 @@ festvox_to_phones["su"] = {
     "oi": ["o", "i^"],
     " ": [" "]
 }
+
+festvox_to_phones["en"] = {
+  "AA": ["OX"],
+  "AA0": ["OX"],
+  "AA1": ["OX"],
+  "AA2": ["OX"],
+  "AE": ["E"],
+  "AE0": ["E"],
+  "AE1": ["E"],
+  "AE2": ["E"],
+  "AH": ["ax"],
+  "AH0": ["ax"],
+  "AH1": ["ax"],
+  "AH2": ["ax"],
+  "AO": ["O"],
+  "AO0": ["O"],
+  "AO1": ["O"],
+  "AO2": ["O"],
+  "AW": ["a", "ux"],
+  "AW0": ["a", "ux"],
+  "AW1": ["a", "ux"],
+  "AW2": ["a", "ux"],
+  "AY": ["a", "i^"],
+  "AY0": ["a", "i^"],
+  "AY1": ["a", "i^"],
+  "AY2": ["a", "i^"],
+  "B": ["b"],
+  "CH": ["c"],
+  "D": ["D"],
+  "DH": ["dx"],
+  "EH": ["e3"],
+  "EH0": ["e3"],
+  "EH1": ["e3"],
+  "EH2": ["e3"],
+  "ER": ["r"],
+  "ER0": ["r"],
+  "ER1": ["r"],
+  "ER2": ["r"],
+  "EY": ["e", "i^"],
+  "EY0": ["e", "i^"],
+  "EY1": ["e", "i^"],
+  "EY2": ["e", "i^"],
+  "F": ["f"],
+  "G": ["g"],
+  "HH": ["h"],
+  "IH": ["ix"],
+  "IH0": ["ix"],
+  "IH1": ["ix"],
+  "IH2": ["ix"],
+  "IY": ["i"],
+  "IY0": ["i"],
+  "IY1": ["i"],
+  "IY2": ["i"],
+  "JH": ["j"],
+  "K": ["k"],
+  "L": ["l"],
+  "M": ["m"],
+  "N": ["n"],
+  "NG": ["N"],
+  "OW": ["o", "u^"],
+  "OW0": ["o", "u^"],
+  "OW1": ["o", "u^"],
+  "OW2": ["o", "u^"],
+  "OY": ["o", "i^"],
+  "OY0": ["o", "i^"],
+  "OY1": ["o", "i^"],
+  "OY2": ["o", "i^"],
+  "P": ["p"],
+  "R": ["r"],
+  "S": ["s"],
+  "SH": ["sh"],
+  "T": ["T"],
+  "TH": ["tx"],
+  "UH": ["ux"],
+  "UH0": ["ux"],
+  "UH1": ["ux"],
+  "UH2": ["ux"],
+  "UW": ["u"],
+  "UW0": ["u"],
+  "UW1": ["u"],
+  "UW2": ["u"],
+  "V": ["v"],
+  "W": ["u^"],
+  "Y": ["i^"],
+  "Z": ["z"],
+  "ZH": ["zh"],
+  " ": [" "]
+}
+
+# AA	vowel
+# AE	vowel
+# AH	vowel
+# AO	vowel
+# AW	vowel
+# AY	vowel
+# B	stop
+# CH	affricate
+# D	stop
+# DH	fricative
+# EH	vowel
+# ER	vowel
+# EY	vowel
+# F	fricative
+# G	stop
+# HH	aspirate
+# IH	vowel
+# IY	vowel
+# JH	affricate
+# K	stop
+# L	liquid
+# M	nasal
+# N	nasal
+# NG	nasal
+# OW	vowel
+# OY	vowel
+# P	stop
+# R	liquid
+# S	fricative
+# SH	fricative
+# T	stop
+# TH	fricative
+# UH	vowel
+# UW	vowel
+# V	fricative
+# W	semivowel
+# Y	semivowel
+# Z	fricative
+# ZH	fricative

@@ -45,7 +45,8 @@ class AudioDataset(datautils.Dataset):
 
     def __getitem__(self, index):
         utterance = self.data[index]
+        # TODO: move this file path scheme someplace else!
         soundfile = os.path.join(corpora_path,speech_langs[self.lang],
-                                    'data',utterance['sound'][:2],utterance['sound']+'.flac')
+                                    'data',utterance['sound'][:3],utterance['sound']+'_1.wav')
         return self.preprocessor.preprocess(soundfile,utterance['text'])
 

@@ -132,6 +132,10 @@ if __name__ == "__main__":
     dev_losses = defaultdict(list)
     dev_cers = defaultdict(list)
 
+    # for feature_class, model, _ in model_list:
+    #     print(feature_class, sum(p.numel() for p in model.parameters() if p.requires_grad))
+    # exit(0)
+
     for e in range(epoch_count):
         start = time.time()
 
@@ -154,6 +158,5 @@ if __name__ == "__main__":
             if(dev_cer[feature_class] < best_so_far[feature_class]):
                 save_model(model, preproc, config["save_path"], feature_class, tag="best")
                 best_so_far[feature_class] = dev_cer[feature_class]
-            if(dev_cer[feature_class] > best_so_far[feature_class]):
-                print("Adjusting learning rate for",feature_class)
-                learning_rate_adjustment(optimizer)
+            print("Adjusting learning rate for",feature_class)
+            learning_rate_adjustment(optimizer)
